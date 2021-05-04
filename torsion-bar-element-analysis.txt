@@ -1,0 +1,132 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+// FINITE ELEMENT METHOD - TORSION BAR ELEMENT ALAYSIS ALGORITHM
+
+int main()
+{
+    //TOPOLOJI MATRISININ BOYUTLARI
+    int topology[4][2] = 
+    {
+        { 1,   2 },
+        { 2,   3 },
+        { 3,   4 },
+        { 4,   5 }
+    };
+
+    double pi = 3.14159265;
+    double L = 1200;
+   
+
+    int KGSize = 5; // TOPOLOJI MATRISININ BOYUTU (12x12)
+    int matrisSize = 2;
+
+    // ELEMAN SAYISI
+    int eleman = 4; // 2 serbestlik
+
+    double matrises[KGSize][matrisSize][matrisSize]; // STIFFNESS MATRIS BOYUTU
+
+    int index = 0;
+    for (int z = 0; z <= L; z += (int)L / eleman)
+    {
+        double D = 60;
+        double d = 32;
+        double dh1 = 45;
+        double dh2 = 24;
+        double dz1 = 0;
+        double dz2 = 0;
+        double G = 0;
+        double Ip = 0;
+        double Lz = 0;
+
+        Lz = z;
+        if (z == 0)
+        {
+            dz1 = D;
+            dz2 = dh1;
+            G = 77;
+            Lz = 0;
+            Ip = (pi * ((dz1 * dz1 * dz1 * dz1) - (dz2 * dz2 * dz2 * dz2)) / 32);
+        }
+        else if (z < 300)
+        {
+            dz1 = D - ((D - d) / L) * z;
+            dz2 = dh1 - ((dh1 - dh2) / L) * z;
+            Ip = (pi * ((dz1 * dz1 * dz1 * dz1) - (dz2 * dz2 * dz2 * dz2)) / 32);
+            G = 77;
+        }
+        else if (z >= 300 && z < 800)
+        {
+            dz1 = D - ((D - d) / L) * z;
+            Ip = (pi * (dz1 * dz1 * dz1 * dz1) / 32);
+            G = 77;
+        }
+        else
+        {
+            dz1 = D - ((D - d) / L) * z;
+            Ip = (pi * (dz1 * dz1 * dz1 * dz1) / 32);
+            G = 32;
+        }
+
+        double formuleArray[2][2] =
+        {
+            { 1, -1 },
+            { -1, 1 }
+        };
+
+        for (int k = 0; k < matrisSize; k++)
+            for (int l = 0; l < matrisSize; l++)
+                matrises[index][k][l] =
+                    Lz == 0 ?
+                    0 :
+                    G * Ip / (Lz) * formuleArray[k][l];
+
+        index += 1;
+
+    }
+
+    double KG[KGSize][KGSize];
+    for (int k = 0; k < eleman; k++)
+    {
+        for (int l = 0; l < matrisSize; l++)
+        {
+            for (int m = 0; m < matrisSize; m++)
+            {
+                KG[(topology[k][l] - 1)][(topology[k][m] - 1)] += matrises[k][l][m];
+            }
+        }
+    }
+    
+    for (int j = 0; j < KGSize; j++)
+    {
+        for (int k = 0; k < KGSize; k++)
+        {
+            printf("%f\t", KG[j][k]);
+        }
+        printf("\n");
+    }
+    
+    printf("\n\nSonuç matrisini kaydetmek istiyor musunuz (y/n): ");
+    char save = getchar();
+    
+    if(save == 'y')
+    {
+        FILE *fp;
+        fp = fopen ("D:\\matris.xls","w");
+        
+        for (int i = 0; i < KGSize; i++)
+        {
+            for (int j = 0; j < KGSize; j++)
+            {
+                fprintf (fp, "%f\t", KG[i][j]);
+            }
+            fprintf (fp, "\n");
+        }
+        
+        fclose (fp);
+        
+        printf("\n\nKG matrisi D:\\matris.xls kaydedildi.\n\n");
+    }
+    
+    return 0;
+}
